@@ -1,6 +1,7 @@
 package deprecated131
 
-# Source: https://github.com/kubernetes/kubernetes/blob/v1.33.0/CHANGELOG/CHANGELOG-1.33.md
+# Sources: https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/4004-deprecate-kube-proxy-version/README.md
+# https://github.com/kubernetes/kubernetes/blob/v1.33.0/CHANGELOG/CHANGELOG-1.33.md
 main[return] {
 	resource := input[_]
 	api := deprecated_resource(resource)

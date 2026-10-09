@@ -83,6 +83,43 @@ func TestRegoLatestDeprecations(t *testing.T) {
 		{
 			"apiVersion": "v1",
 			"kind":       "Service",
+			"metadata":   map[string]interface{}{"name": "headless-external-service"},
+			"spec": map[string]interface{}{
+				"clusterIP":   "None",
+				"externalIPs": []interface{}{"192.0.2.11"},
+			},
+		},
+		{
+			"apiVersion": "v1",
+			"kind":       "Service",
+			"metadata":   map[string]interface{}{"name": "external-name-service"},
+			"spec": map[string]interface{}{
+				"type":        "ExternalName",
+				"externalIPs": []interface{}{"192.0.2.12"},
+			},
+		},
+		{
+			"apiVersion": "certificates.k8s.io/v1alpha1",
+			"kind":       "ClusterTrustBundle",
+			"metadata":   map[string]interface{}{"name": "old-trust-bundle"},
+		},
+		{
+			"apiVersion": "certificates.k8s.io/v1beta1",
+			"kind":       "ClusterTrustBundle",
+			"metadata":   map[string]interface{}{"name": "beta-trust-bundle"},
+		},
+		{
+			"apiVersion": "certificates.k8s.io/v1beta1",
+			"kind":       "PodCertificateRequest",
+			"metadata":   map[string]interface{}{"name": "pod-certificate-request"},
+			"spec": map[string]interface{}{
+				"pkixPublicKey":     "cHVibGljLWtleQ==",
+				"proofOfPossession": "cHJvb2Y=",
+			},
+		},
+		{
+			"apiVersion": "v1",
+			"kind":       "Service",
 			"metadata":   map[string]interface{}{"name": "regular-service"},
 			"spec":       map[string]interface{}{"ports": []interface{}{}},
 		},
@@ -92,29 +129,33 @@ func TestRegoLatestDeprecations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to evaluate resources: %s", err)
 	}
-	if len(results) != 6 {
-		t.Fatalf("expected 6 deprecated resources, got %d", len(results))
+	if len(results) != 9 {
+		t.Fatalf("expected 9 deprecated resources or fields, got %d", len(results))
 	}
 
 	expected := map[string]struct {
 		since       string
 		replaceWith string
 	}{
-		"node":                 {"1.31.0", "kube-proxy version is no longer reported in Node status"},
-		"example":              {"1.33.0", "discovery.k8s.io/v1 EndpointSlice"},
-		"topology-service":     {"1.33.0", "spec.trafficDistribution"},
-		"resizing-pod":         {"1.33.0", "status.conditions (PodResizePending and PodResizeInProgress)"},
-		"prefer-close-service": {"1.35.0", "spec.trafficDistribution: PreferSameZone"},
-		"external-service":     {"1.36.0", "Use a LoadBalancer or NodePort Service, or Gateway API, instead of spec.externalIPs"},
+		"node/Deprecated API fields since 1.31":                    {"1.31.0", "kube-proxy version is no longer reported in Node status"},
+		"example/Deprecated APIs since 1.33":                       {"1.33.0", "discovery.k8s.io/v1 EndpointSlice"},
+		"topology-service/Deprecated APIs since 1.33":              {"1.33.0", "spec.trafficDistribution"},
+		"old-trust-bundle/Deprecated APIs since 1.34":              {"1.34.0", "certificates.k8s.io/v1beta1 (v1 is available in Kubernetes 1.37+)"},
+		"prefer-close-service/Deprecated API values since 1.35":    {"1.35.0", "spec.trafficDistribution: PreferSameZone"},
+		"external-service/Deprecated API fields since 1.36":        {"1.36.0", "Use an administrator-managed LoadBalancer Service or Gateway API instead of spec.externalIPs"},
+		"pod-certificate-request/Deprecated API fields since 1.36": {"1.36.0", "spec.stubPKCS10Request"},
+		"beta-trust-bundle/Deprecated APIs since 1.37":             {"1.37.0", "certificates.k8s.io/v1"},
+		"pod-certificate-request/Deprecated APIs since 1.37":       {"1.37.0", "certificates.k8s.io/v1"},
 	}
 	for _, result := range results {
-		want, ok := expected[result.Name]
+		key := result.Name + "/" + result.RuleSet
+		want, ok := expected[key]
 		if !ok {
-			t.Errorf("unexpected deprecated resource: %s", result.Name)
+			t.Errorf("unexpected deprecated resource or field: %s", key)
 			continue
 		}
 		if result.Since.String() != want.since || result.ReplaceWith != want.replaceWith {
-			t.Errorf("unexpected finding for %s: %+v", result.Name, result)
+			t.Errorf("unexpected finding for %s: %+v", key, result)
 		}
 	}
 
@@ -125,10 +166,11 @@ func TestRegoLatestDeprecations(t *testing.T) {
 		{"1.30", 0},
 		{"1.31", 1},
 		{"1.32", 1},
-		{"1.33", 4},
+		{"1.33", 3},
 		{"1.34", 4},
 		{"1.35", 5},
-		{"1.36", 6},
+		{"1.36", 7},
+		{"1.37", 9},
 	} {
 		targetVersion, err := judge.NewVersion(target.version)
 		if err != nil {

@@ -24,7 +24,34 @@ deprecated_resource(r) = api {
 	count(object.get(spec, "externalIPs", [])) > 0
 	api := {
 		"old": "v1",
-		"new": "Use a LoadBalancer or NodePort Service, or Gateway API, instead of spec.externalIPs",
+		"new": "Use an administrator-managed LoadBalancer Service or Gateway API instead of spec.externalIPs",
+		"since": "1.36",
+	}
+
+	object.get(spec, "clusterIP", "") != "None"
+	object.get(spec, "type", "ClusterIP") != "ExternalName"
+}
+
+deprecated_resource(r) = api {
+	r.kind == "PodCertificateRequest"
+	r.apiVersion == "certificates.k8s.io/v1beta1"
+	spec := object.get(r, "spec", {})
+	object.get(spec, "pkixPublicKey", "") != ""
+	api := {
+		"old": "certificates.k8s.io/v1beta1",
+		"new": "spec.stubPKCS10Request",
+		"since": "1.36",
+	}
+}
+
+deprecated_resource(r) = api {
+	r.kind == "PodCertificateRequest"
+	r.apiVersion == "certificates.k8s.io/v1beta1"
+	spec := object.get(r, "spec", {})
+	object.get(spec, "proofOfPossession", "") != ""
+	api := {
+		"old": "certificates.k8s.io/v1beta1",
+		"new": "spec.stubPKCS10Request",
 		"since": "1.36",
 	}
 }

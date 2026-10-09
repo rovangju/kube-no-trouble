@@ -40,18 +40,6 @@ deprecated_resource(r) = api {
 	}
 }
 
-deprecated_resource(r) = api {
-	r.kind == "Pod"
-	r.apiVersion == "v1"
-	status := object.get(r, "status", {})
-	object.get(status, "resize", null) != null
-	api := {
-		"old": "v1",
-		"new": "status.conditions (PodResizePending and PodResizeInProgress)",
-		"since": "1.33",
-	}
-}
-
 get_default(val, key, _) = val[key]
 
 get_default(val, key, fallback) = fallback {
