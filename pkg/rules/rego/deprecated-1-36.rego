@@ -28,8 +28,13 @@ deprecated_resource(r) = api {
 		"since": "1.36",
 	}
 
-	object.get(spec, "clusterIP", "") != "None"
 	object.get(spec, "type", "ClusterIP") != "ExternalName"
+	not is_headless_service(spec)
+}
+
+is_headless_service(spec) {
+	object.get(spec, "type", "ClusterIP") == "ClusterIP"
+	object.get(spec, "clusterIP", "") == "None"
 }
 
 deprecated_resource(r) = api {

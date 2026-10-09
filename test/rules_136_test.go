@@ -51,6 +51,21 @@ func TestRegoLatestDeprecations(t *testing.T) {
 		{
 			"apiVersion": "v1",
 			"kind":       "Service",
+			"metadata":   map[string]interface{}{"name": "load-balancer-service"},
+			"spec": map[string]interface{}{
+				"type":           "LoadBalancer",
+				"loadBalancerIP": "192.0.2.20",
+			},
+		},
+		{
+			"apiVersion": "v1",
+			"kind":       "Service",
+			"metadata":   map[string]interface{}{"name": "ignored-load-balancer-ip"},
+			"spec":       map[string]interface{}{"loadBalancerIP": "192.0.2.21"},
+		},
+		{
+			"apiVersion": "v1",
+			"kind":       "Service",
 			"metadata": map[string]interface{}{
 				"name":        "topology-service",
 				"annotations": map[string]interface{}{"service.kubernetes.io/topology-mode": "Auto"},
@@ -129,14 +144,15 @@ func TestRegoLatestDeprecations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to evaluate resources: %s", err)
 	}
-	if len(results) != 9 {
-		t.Fatalf("expected 9 deprecated resources or fields, got %d", len(results))
+	if len(results) != 10 {
+		t.Fatalf("expected 10 deprecated resources or fields, got %d", len(results))
 	}
 
 	expected := map[string]struct {
 		since       string
 		replaceWith string
 	}{
+		"load-balancer-service/Deprecated API fields since 1.24":   {"1.24.0", "implementation-specific LoadBalancer annotations"},
 		"node/Deprecated API fields since 1.31":                    {"1.31.0", "kube-proxy version is no longer reported in Node status"},
 		"example/Deprecated APIs since 1.33":                       {"1.33.0", "discovery.k8s.io/v1 EndpointSlice"},
 		"topology-service/Deprecated APIs since 1.33":              {"1.33.0", "spec.trafficDistribution"},
@@ -163,14 +179,16 @@ func TestRegoLatestDeprecations(t *testing.T) {
 		version  string
 		expected int
 	}{
-		{"1.30", 0},
-		{"1.31", 1},
-		{"1.32", 1},
-		{"1.33", 3},
-		{"1.34", 4},
-		{"1.35", 5},
-		{"1.36", 7},
-		{"1.37", 9},
+		{"1.23", 0},
+		{"1.24", 1},
+		{"1.30", 1},
+		{"1.31", 2},
+		{"1.32", 2},
+		{"1.33", 4},
+		{"1.34", 5},
+		{"1.35", 6},
+		{"1.36", 8},
+		{"1.37", 10},
 	} {
 		targetVersion, err := judge.NewVersion(target.version)
 		if err != nil {
