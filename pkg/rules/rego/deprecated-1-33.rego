@@ -1,6 +1,7 @@
 package deprecated133
 
-# Source: https://kubernetes.io/blog/2025/04/24/endpoints-deprecation/
+# Sources: https://kubernetes.io/blog/2025/04/24/endpoints-deprecation/
+# https://github.com/kubernetes/kubernetes/blob/v1.33.0/CHANGELOG/CHANGELOG-1.33.md
 main[return] {
 	resource := input[_]
 	api := deprecated_resource(resource)
@@ -23,6 +24,30 @@ deprecated_resource(r) = api {
 	api := {
 		"old": "v1",
 		"new": "discovery.k8s.io/v1 EndpointSlice",
+		"since": "1.33",
+	}
+}
+
+deprecated_resource(r) = api {
+	r.kind == "Service"
+	r.apiVersion == "v1"
+	annotations := object.get(r.metadata, "annotations", {})
+	object.get(annotations, "service.kubernetes.io/topology-mode", null) != null
+	api := {
+		"old": "v1",
+		"new": "spec.trafficDistribution",
+		"since": "1.33",
+	}
+}
+
+deprecated_resource(r) = api {
+	r.kind == "Pod"
+	r.apiVersion == "v1"
+	status := object.get(r, "status", {})
+	object.get(status, "resize", null) != null
+	api := {
+		"old": "v1",
+		"new": "status.conditions (PodResizePending and PodResizeInProgress)",
 		"since": "1.33",
 	}
 }

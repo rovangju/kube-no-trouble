@@ -31,6 +31,14 @@ func TestRegoLatestDeprecations(t *testing.T) {
 	resources := []map[string]interface{}{
 		{
 			"apiVersion": "v1",
+			"kind":       "Node",
+			"metadata":   map[string]interface{}{"name": "node"},
+			"status": map[string]interface{}{
+				"nodeInfo": map[string]interface{}{"kubeProxyVersion": "v1.30.0"},
+			},
+		},
+		{
+			"apiVersion": "v1",
 			"kind":       "Endpoints",
 			"metadata":   map[string]interface{}{"name": "example"},
 		},
@@ -39,6 +47,38 @@ func TestRegoLatestDeprecations(t *testing.T) {
 			"kind":       "Service",
 			"metadata":   map[string]interface{}{"name": "external-service"},
 			"spec":       map[string]interface{}{"externalIPs": []interface{}{"192.0.2.10"}},
+		},
+		{
+			"apiVersion": "v1",
+			"kind":       "Service",
+			"metadata": map[string]interface{}{
+				"name":        "topology-service",
+				"annotations": map[string]interface{}{"service.kubernetes.io/topology-mode": "Auto"},
+			},
+			"spec": map[string]interface{}{},
+		},
+		{
+			"apiVersion": "v1",
+			"kind":       "Service",
+			"metadata":   map[string]interface{}{"name": "prefer-close-service"},
+			"spec":       map[string]interface{}{"trafficDistribution": "PreferClose"},
+		},
+		{
+			"apiVersion": "v1",
+			"kind":       "Pod",
+			"metadata":   map[string]interface{}{"name": "resizing-pod"},
+			"status":     map[string]interface{}{"resize": "Proposed"},
+		},
+		{
+			"apiVersion": "v1",
+			"kind":       "Service",
+			"metadata":   map[string]interface{}{"name": "empty-external-ips-service"},
+			"spec":       map[string]interface{}{"externalIPs": []interface{}{}},
+		},
+		{
+			"apiVersion": "v1",
+			"kind":       "Service",
+			"metadata":   map[string]interface{}{"name": "service-without-spec"},
 		},
 		{
 			"apiVersion": "v1",
@@ -52,22 +92,29 @@ func TestRegoLatestDeprecations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to evaluate resources: %s", err)
 	}
-	if len(results) != 2 {
-		t.Fatalf("expected 2 deprecated resources, got %d", len(results))
+	if len(results) != 6 {
+		t.Fatalf("expected 6 deprecated resources, got %d", len(results))
 	}
 
+	expected := map[string]struct {
+		since       string
+		replaceWith string
+	}{
+		"node":                 {"1.31.0", "kube-proxy version is no longer reported in Node status"},
+		"example":              {"1.33.0", "discovery.k8s.io/v1 EndpointSlice"},
+		"topology-service":     {"1.33.0", "spec.trafficDistribution"},
+		"resizing-pod":         {"1.33.0", "status.conditions (PodResizePending and PodResizeInProgress)"},
+		"prefer-close-service": {"1.35.0", "spec.trafficDistribution: PreferSameZone"},
+		"external-service":     {"1.36.0", "Use a LoadBalancer or NodePort Service, or Gateway API, instead of spec.externalIPs"},
+	}
 	for _, result := range results {
-		switch result.Name {
-		case "example":
-			if result.Since.String() != "1.33.0" || result.ReplaceWith != "discovery.k8s.io/v1 EndpointSlice" {
-				t.Errorf("unexpected Endpoints finding: %+v", result)
-			}
-		case "external-service":
-			if result.Since.String() != "1.36.0" || result.ReplaceWith != "Use a LoadBalancer or NodePort Service, or Gateway API, instead of spec.externalIPs" {
-				t.Errorf("unexpected Service finding: %+v", result)
-			}
-		default:
+		want, ok := expected[result.Name]
+		if !ok {
 			t.Errorf("unexpected deprecated resource: %s", result.Name)
+			continue
+		}
+		if result.Since.String() != want.since || result.ReplaceWith != want.replaceWith {
+			t.Errorf("unexpected finding for %s: %+v", result.Name, result)
 		}
 	}
 
@@ -75,9 +122,13 @@ func TestRegoLatestDeprecations(t *testing.T) {
 		version  string
 		expected int
 	}{
-		{"1.32", 0},
-		{"1.35", 1},
-		{"1.36", 2},
+		{"1.30", 0},
+		{"1.31", 1},
+		{"1.32", 1},
+		{"1.33", 4},
+		{"1.34", 4},
+		{"1.35", 5},
+		{"1.36", 6},
 	} {
 		targetVersion, err := judge.NewVersion(target.version)
 		if err != nil {

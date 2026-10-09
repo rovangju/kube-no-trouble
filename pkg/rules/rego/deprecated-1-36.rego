@@ -20,7 +20,8 @@ main[return] {
 deprecated_resource(r) = api {
 	r.kind == "Service"
 	r.apiVersion == "v1"
-	object.get(r.spec, "externalIPs", null) != null
+	spec := object.get(r, "spec", {})
+	count(object.get(spec, "externalIPs", [])) > 0
 	api := {
 		"old": "v1",
 		"new": "Use a LoadBalancer or NodePort Service, or Gateway API, instead of spec.externalIPs",
