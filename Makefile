@@ -7,50 +7,52 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
-ifeq (, $(shell command -v gtar))
-	TAR ?= tar
-endif
-TAR ?= gtar
-
 ifneq (3.82,$(firstword $(sort $(MAKE_VERSION) 3.82)))
   $(error This Make does not support .ONESHELL, use GNU Make 3.82 and newer)
 endif
 
-ifeq (windows,$(GOOS))
-  BIN_SUFFIX ?= .exe
-endif
-BIN_SUFFIX ?=
-
 .DEFAULT_GOAL :=help
 
-GITHUB_REF ?= dev
-GIT_REF ?= $(shell echo "$(GITHUB_REF)" | sed "s,refs/[^/]*/,," | tr -cd '[:alnum:]._-')
-GITHUB_SHA ?= dev
-GIT_SHA ?= $(GITHUB_SHA)
+# Set a default value for a variable, expanding it immediately (":=").
+# Recursively expanded ("?=") variables that call $(shell) are re-expanded
+# every time the recipe environment is built, and .EXPORT_ALL_VARIABLES makes
+# that expansion recursive, so make effectively never finishes.
+# Usage: $(eval $(call setvar,VAR,value)) keeps env/command line overrides working.
+setvar = $(if $(filter undefined,$(origin $(1))),$(1) := $(2))
+unexport setvar
 
-CGO_ENABLED ?= 0
-GOOS ?= $(shell go env GOOS)
-GOARCH ?= $(shell go env GOARCH)
-BIN_ARCH ?= $(GOOS)-$(GOARCH)
-RELEASE_SUFFIX ?= $(GIT_REF)-$(BIN_ARCH).tar.gz
+$(eval $(call setvar,TAR,$(shell command -v gtar >/dev/null 2>&1 && echo gtar || echo tar)))
 
-OPA_REPO ?= github.com/open-policy-agent/opa
-OPA_VERSION ?= v0.22.0
+$(eval $(call setvar,GOOS,$(shell go env GOOS)))
+$(eval $(call setvar,GOARCH,$(shell go env GOARCH)))
+$(eval $(call setvar,CGO_ENABLED,0))
+$(eval $(call setvar,BIN_SUFFIX,$(if $(filter windows,$(GOOS)),.exe,)))
 
-BIN_DIR ?= bin
-CMD_DIR ?= cmd
-RELEASE_DIR ?= release-artifacts
-CMDS ?= $(shell ls $(CMD_DIR))
-BINS ?= $(addsuffix -$(BIN_ARCH)$(BIN_SUFFIX),$(addprefix $(BIN_DIR)/,$(CMDS)))
-CHANGELOG ?= changelog.md
+$(eval $(call setvar,GITHUB_REF,dev))
+$(eval $(call setvar,GIT_REF,$(shell echo "$(GITHUB_REF)" | sed "s,refs/[^/]*/,," | tr -cd '[:alnum:]._-')))
+$(eval $(call setvar,GITHUB_SHA,dev))
+$(eval $(call setvar,GIT_SHA,$(GITHUB_SHA)))
 
-RELEASE_ARTIFACTS ?= $(addsuffix -$(RELEASE_SUFFIX),$(addprefix $(RELEASE_DIR)/,$(CMDS)))
-SRC ?= $(shell find . -iname '*.go')
+$(eval $(call setvar,BIN_ARCH,$(GOOS)-$(GOARCH)))
+$(eval $(call setvar,RELEASE_SUFFIX,$(GIT_REF)-$(BIN_ARCH).tar.gz))
 
-GOCMD ?= go
-GOBUILD ?= $(GOCMD) build
+$(eval $(call setvar,OPA_REPO,github.com/open-policy-agent/opa))
+$(eval $(call setvar,OPA_VERSION,v0.22.0))
 
-REQ_BINS = go
+$(eval $(call setvar,BIN_DIR,bin))
+$(eval $(call setvar,CMD_DIR,cmd))
+$(eval $(call setvar,RELEASE_DIR,release-artifacts))
+$(eval $(call setvar,CMDS,$(shell ls $(CMD_DIR))))
+$(eval $(call setvar,BINS,$(addsuffix -$(BIN_ARCH)$(BIN_SUFFIX),$(addprefix $(BIN_DIR)/,$(CMDS)))))
+$(eval $(call setvar,CHANGELOG,changelog.md))
+
+$(eval $(call setvar,RELEASE_ARTIFACTS,$(addsuffix -$(RELEASE_SUFFIX),$(addprefix $(RELEASE_DIR)/,$(CMDS)))))
+$(eval $(call setvar,SRC,$(shell find . -iname '*.go')))
+
+$(eval $(call setvar,GOCMD,go))
+$(eval $(call setvar,GOBUILD,$(GOCMD) build))
+
+REQ_BINS := go
 
 _ := $(foreach exec,$(REQ_BINS), \
        $(if $(shell which $(exec)),some string,$(error "No $(exec) binary in $$PATH")))
