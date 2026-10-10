@@ -144,16 +144,14 @@ func TestRegoLatestDeprecations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to evaluate resources: %s", err)
 	}
-	if len(results) != 10 {
-		t.Fatalf("expected 10 deprecated resources or fields, got %d", len(results))
+	if len(results) != 8 {
+		t.Fatalf("expected 8 deprecated resources or fields, got %d", len(results))
 	}
 
 	expected := map[string]struct {
 		since       string
 		replaceWith string
 	}{
-		"load-balancer-service/Deprecated API fields since 1.24":   {"1.24.0", "implementation-specific LoadBalancer annotations"},
-		"node/Deprecated API fields since 1.31":                    {"1.31.0", "kube-proxy version is no longer reported in Node status"},
 		"example/Deprecated APIs since 1.33":                       {"1.33.0", "discovery.k8s.io/v1 EndpointSlice"},
 		"topology-service/Deprecated APIs since 1.33":              {"1.33.0", "spec.trafficDistribution"},
 		"old-trust-bundle/Deprecated APIs since 1.34":              {"1.34.0", "certificates.k8s.io/v1beta1 (v1 is available in Kubernetes 1.37+)"},
@@ -180,15 +178,15 @@ func TestRegoLatestDeprecations(t *testing.T) {
 		expected int
 	}{
 		{"1.23", 0},
-		{"1.24", 1},
-		{"1.30", 1},
-		{"1.31", 2},
-		{"1.32", 2},
-		{"1.33", 4},
-		{"1.34", 5},
-		{"1.35", 6},
-		{"1.36", 8},
-		{"1.37", 10},
+		{"1.24", 0},
+		{"1.30", 0},
+		{"1.31", 0},
+		{"1.32", 0},
+		{"1.33", 2},
+		{"1.34", 3},
+		{"1.35", 4},
+		{"1.36", 6},
+		{"1.37", 8},
 	} {
 		targetVersion, err := judge.NewVersion(target.version)
 		if err != nil {

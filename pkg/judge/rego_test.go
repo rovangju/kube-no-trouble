@@ -44,8 +44,8 @@ func TestEvalRules(t *testing.T) {
 		inputFiles []string // file list
 		expected   []string // findings - kinds
 	}{
-		{"deprecated-1-16.rego", []string{"deployment-v1beta1.yaml"}, []string{"Deployment"}},
-		{"deprecated-1-22.rego", []string{"ingress-v1beta1.yaml"}, []string{"Ingress"}},
+		{"deprecated-1-32.rego", []string{"flowschema-v1beta3.yaml"}, []string{"FlowSchema"}},
+		{"deprecated-1-36.rego", []string{"service-external-ips-v1.yaml"}, []string{"Service"}},
 	}
 
 	for _, tc := range testCases {

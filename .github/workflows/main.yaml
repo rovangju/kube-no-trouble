@@ -72,10 +72,6 @@ jobs:
     strategy:
       matrix:
         k8s_version: [
-          "kindest/node:v1.28.7",
-          "kindest/node:v1.29.2",
-          "kindest/node:v1.30.0",
-          "kindest/node:v1.31.0",
           "kindest/node:v1.32.0",
           "kindest/node:v1.33.0",
           "kindest/node:v1.34.0",

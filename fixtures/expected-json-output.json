@@ -1,12 +1,12 @@
 [
 	{
-		"Name": "nginx-deployment-old",
+		"Name": "external-service",
 		"Namespace": "\u003cundefined\u003e",
-		"Kind": "Deployment",
-		"ApiVersion": "apps/v1beta1",
-		"RuleSet": "Deprecated APIs removed in 1.16",
-		"ReplaceWith": "apps/v1",
-		"Since": "1.9.0",
+		"Kind": "Service",
+		"ApiVersion": "v1",
+		"RuleSet": "Deprecated API fields since 1.36",
+		"ReplaceWith": "Use an administrator-managed LoadBalancer Service or Gateway API instead of spec.externalIPs",
+		"Since": "1.36.0",
 		"Labels": {}
 	}
 ]

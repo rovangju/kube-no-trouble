@@ -28,6 +28,11 @@ as a pre-release. No hotfixes — fixes ride the next build.
 
 The most common maintenance task. Worked example: PR #1.
 
+Supported window: the latest official K8s minor + the 5 before it (policy
+stated in the README "Supported Versions" section). When adding a new
+version, prune rules, fixtures, tests, and matrix entries that fall below
+the window.
+
 1. **Ground truth = API schemas.** Read the type definitions in
    `kubernetes/kubernetes` at the target version's tag — e.g.
    `staging/src/k8s.io/api/<group>/<version>/zz_generated.prerelease-lifecycle.go`
@@ -40,7 +45,10 @@ The most common maintenance task. Worked example: PR #1.
    per-version test under `test/` — fixture cases plus version-filtering
    assertions.
 4. **Integration matrix:** keep the CI workflow's K8s version matrix
-   current (add the new version, drop EOL ones).
+   current (add the new version, drop EOL ones). Bump
+   `MinSupportedTargetVersion` in `pkg/config/config.go` to match the
+   window — it drives the below-window warnings for target and cluster
+   versions.
 5. **Double-check pass** before merging: audit for overlooked
    deprecations and nuances; schemas win over prose.
 

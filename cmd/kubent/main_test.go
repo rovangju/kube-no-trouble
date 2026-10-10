@@ -17,6 +17,7 @@ import (
 	"github.com/rovangju/kube-no-trouble/pkg/printer"
 
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const FIXTURES_DIR = "../../fixtures"
@@ -113,30 +114,32 @@ func TestMainExitCodes(t *testing.T) {
 	helm3FlagDisabled := "--helm3=false"
 	clusterFlagDisabled := "--cluster=false"
 	testCases := []struct {
-		name        string
-		args        []string // file list
-		expected    int      // expected exit code
-		stdout      string   // expected stdout
-		outFileName string
-		emptyStderr bool
+		name           string
+		args           []string // file list
+		expected       int      // expected exit code
+		stdout         string   // expected stdout
+		outFileName    string
+		emptyStderr    bool
+		stderrContains string // expected substring in stderr
 	}{
-		{"success", []string{clusterFlagDisabled, helm3FlagDisabled}, 0, "", "", false},
-		{"errorBadFlag", []string{"-c=not-boolean"}, 2, "", "", false},
-		{"successFound", []string{"-o=json", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "deployment-v1beta1.yaml")}, 0, string(expectedJsonOutput), "", false},
-		{"successFoundWithLabels", []string{"--labels=true", "-o=json", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "deployment-v1beta1-labels.yaml")}, 0, string(expectedJsonOutputLabels), "", false},
-		{"exitErrorFlagNone", []string{clusterFlagDisabled, helm3FlagDisabled, "-e"}, 0, "", "", false},
-		{"exitErrorFlagFound", []string{clusterFlagDisabled, helm3FlagDisabled, "-e", "-f=" + filepath.Join(FIXTURES_DIR, "deployment-v1beta1.yaml")}, 200, "", "", false},
-		{"version short flag set", []string{"-v"}, 0, "", "", false},
-		{"version long flag set", []string{"--version"}, 0, "", "", false},
-		{"empty text output", []string{clusterFlagDisabled, helm3FlagDisabled}, 0, "", "", false},
-		{"empty json output", []string{"-o=json", clusterFlagDisabled, helm3FlagDisabled}, 0, "[]\n", "", false},
-		{"fail to get collectors", []string{"-o=json", "-f=fail"}, 100, "[]\n", "", false},
-		{"json-file", []string{"-o=json", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "deployment-v1beta1.yaml")}, 0, "", filepath.Join(tmpDir, "json-file.out"), false},
-		{"text-file", []string{"-o=text", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "deployment-v1beta1.yaml")}, 0, "", filepath.Join(tmpDir, "text-file.out"), false},
-		{"json-stdout", []string{"-o=json", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "deployment-v1beta1.yaml")}, 0, string(expectedJsonOutput), "-", false},
-		{"json-stdout-with-labels", []string{"--labels=true", "-o=json", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "deployment-v1beta1-labels.yaml")}, 0, string(expectedJsonOutputLabels), "-", false},
-		{"error-bad-file", []string{clusterFlagDisabled, helm3FlagDisabled}, 1, "", "/this/dir/is/unlikely/to/exist", false},
-		{"no-3rdparty-output", []string{clusterFlagDisabled, helm3FlagDisabled, "-l=disabled"}, 0, "", "", true},
+		{"success", []string{clusterFlagDisabled, helm3FlagDisabled}, 0, "", "", false, ""},
+		{"errorBadFlag", []string{"-c=not-boolean"}, 2, "", "", false, ""},
+		{"successFound", []string{"-o=json", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "service-external-ips-v1.yaml")}, 0, string(expectedJsonOutput), "", false, ""},
+		{"successFoundWithLabels", []string{"--labels=true", "-o=json", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "service-external-ips-v1-labels.yaml")}, 0, string(expectedJsonOutputLabels), "", false, ""},
+		{"exitErrorFlagNone", []string{clusterFlagDisabled, helm3FlagDisabled, "-e"}, 0, "", "", false, ""},
+		{"exitErrorFlagFound", []string{clusterFlagDisabled, helm3FlagDisabled, "-e", "-f=" + filepath.Join(FIXTURES_DIR, "service-external-ips-v1.yaml")}, 200, "", "", false, ""},
+		{"version short flag set", []string{"-v"}, 0, "", "", false, ""},
+		{"version long flag set", []string{"--version"}, 0, "", "", false, ""},
+		{"empty text output", []string{clusterFlagDisabled, helm3FlagDisabled}, 0, "", "", false, ""},
+		{"empty json output", []string{"-o=json", clusterFlagDisabled, helm3FlagDisabled}, 0, "[]\n", "", false, ""},
+		{"fail to get collectors", []string{"-o=json", "-f=fail"}, 100, "[]\n", "", false, ""},
+		{"json-file", []string{"-o=json", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "service-external-ips-v1.yaml")}, 0, "", filepath.Join(tmpDir, "json-file.out"), false, ""},
+		{"text-file", []string{"-o=text", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "service-external-ips-v1.yaml")}, 0, "", filepath.Join(tmpDir, "text-file.out"), false, ""},
+		{"json-stdout", []string{"-o=json", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "service-external-ips-v1.yaml")}, 0, string(expectedJsonOutput), "-", false, ""},
+		{"json-stdout-with-labels", []string{"--labels=true", "-o=json", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "service-external-ips-v1-labels.yaml")}, 0, string(expectedJsonOutputLabels), "-", false, ""},
+		{"error-bad-file", []string{clusterFlagDisabled, helm3FlagDisabled}, 1, "", "/this/dir/is/unlikely/to/exist", false, ""},
+		{"no-3rdparty-output", []string{clusterFlagDisabled, helm3FlagDisabled, "-l=disabled"}, 0, "", "", true, ""},
+		{"target-below-window", []string{"-t=1.25", clusterFlagDisabled, helm3FlagDisabled, "-f=" + filepath.Join(FIXTURES_DIR, "service-external-ips-v1.yaml")}, 0, "", "", false, "below the supported window"},
 	}
 
 	if os.Getenv("TEST_EXIT_CODE") == "1" {
@@ -196,6 +199,10 @@ func TestMainExitCodes(t *testing.T) {
 
 			if tc.emptyStderr && errStr != "" {
 				t.Fatalf("expected empty stderr, got: %s", errStr)
+			}
+
+			if tc.stderrContains != "" && !strings.Contains(errStr, tc.stderrContains) {
+				t.Fatalf("expected stderr to contain %q, got: %s", tc.stderrContains, errStr)
 			}
 		})
 	}
@@ -306,4 +313,49 @@ func Test_configureGlobalLogging(t *testing.T) {
 	// just make sure the method runs, this is mostly covered
 	// by the Test_MainExitCodes
 	configureGlobalLogging()
+}
+
+func TestLogVersionSupport(t *testing.T) {
+	origLogger := log.Logger
+	var buf bytes.Buffer
+	log.Logger = zerolog.New(&buf)
+	defer func() { log.Logger = origLogger }()
+
+	ver := func(s string) *judge.Version {
+		v, err := judge.NewVersion(s)
+		if err != nil {
+			t.Fatalf("failed to parse version %s: %v", s, err)
+		}
+		return v
+	}
+
+	testCases := []struct {
+		name         string
+		target       *judge.Version
+		cluster      *judge.Version
+		wantContains string
+		wantWarnings int
+	}{
+		{"target in window", ver("1.32"), nil, "", 0},
+		{"target future", ver("1.38.0"), nil, "", 0},
+		{"target below window", ver("1.31"), nil, "target K8s version 1.31", 1},
+		{"cluster below window with in-window target", ver("1.36"), ver("1.29.0"), "cluster is running K8s version 1.29", 1},
+		{"cluster and target same version below window warns once", ver("1.29.0"), ver("1.29.0"), "below the supported window", 1},
+		{"target below window with newer cluster", ver("1.25"), ver("1.37.0"), "target K8s version 1.25", 1},
+		{"no versions", nil, nil, "", 0},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			buf.Reset()
+			logVersionSupport(tc.target, tc.cluster)
+			out := buf.String()
+			if tc.wantContains != "" && !strings.Contains(out, tc.wantContains) {
+				t.Errorf("expected log to contain %q, got: %s", tc.wantContains, out)
+			}
+			if count := strings.Count(out, "below the supported window"); count != tc.wantWarnings {
+				t.Errorf("expected %d warnings, got %d: %s", tc.wantWarnings, count, out)
+			}
+		})
+	}
 }

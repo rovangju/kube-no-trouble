@@ -6,8 +6,8 @@ __*Easily check your clusters for use of deprecated APIs*__
 > Many thanks to the original creators and maintainers for building such a widely useful tool — the upstream project is no
 > longer actively maintained, so this fork carries the work forward.
 
-Kubernetes 1.16 is slowly starting to roll out, not only across various managed
-Kubernetes offerings, and with that come a lot of API deprecations[1][1].
+Kubernetes continuously deprecates and removes API versions[1], and workloads
+that keep using them break on cluster upgrades.
 
 *Kube No Trouble (__`kubent`__)* is a simple tool to check whether you're using
 any of these API versions in your cluster and therefore should upgrade your
@@ -26,6 +26,17 @@ particular following tools are supported:
 - Blog post on K8s deprecated APIs and introduction of kubent: [Kubernetes: Deprecated APIs aka Introducing Kube-No-Trouble][2]
 
 [2]: https://stepan.wtf/kubernetes-deprecated-apis-introducing-kubent/
+
+## Supported Versions
+
+`kubent` targets the latest official Kubernetes release and the five minor
+versions that precede it — e.g. with 1.37 current, the supported range is
+**1.32 → 1.37**.
+
+This is a goal (best effort), not a guarantee. Detection rules, fixtures,
+tests, and CI coverage for versions outside that window are removed as new
+Kubernetes releases land — use an older `kubent` release if you need to scan
+clusters pinned further back.
 
 ## Install
 
@@ -72,21 +83,19 @@ $./kubent
 6:25PM INF Initializing collectors and retrieving data
 6:25PM INF Retrieved 103 resources from collector name=Cluster
 6:25PM INF Retrieved 0 resources from collector name="Helm v3"
-6:25PM INF Loaded ruleset name=deprecated-1-16.rego
-6:25PM INF Loaded ruleset name=deprecated-1-20.rego
+6:25PM INF Loaded ruleset name=deprecated-1-32.rego
+6:25PM INF Loaded ruleset name=deprecated-1-36.rego
 __________________________________________________________________________________________
->>> 1.16 Deprecated APIs <<<
+>>> 1.32 Deprecated APIs <<<
 ------------------------------------------------------------------------------------------
-KIND         NAMESPACE     NAME                    API_VERSION
-Deployment   default       nginx-deployment-old    apps/v1beta1
-Deployment   kube-system   event-exporter-v0.2.5   apps/v1beta1
-Deployment   kube-system   k8s-snapshots           extensions/v1beta1
-Deployment   kube-system   kube-dns                extensions/v1beta1
+KIND                      NAMESPACE   NAME                API_VERSION
+FlowSchema                default     my-flowschema       flowcontrol.apiserver.k8s.io/v1beta3
+PriorityLevelConfiguration default   my-priority-config  flowcontrol.apiserver.k8s.io/v1beta3
 __________________________________________________________________________________________
->>> 1.20 Deprecated APIs <<<
+>>> 1.36 Deprecated APIs <<<
 ------------------------------------------------------------------------------------------
-KIND      NAMESPACE   NAME           API_VERSION
-Ingress   default     test-ingress   extensions/v1beta1
+KIND     NAMESPACE   NAME             API_VERSION
+Service  default     external-svc     v1 (spec.externalIPs)
 ```
 
 ### Arguments
@@ -127,7 +136,7 @@ Usage of ./kubent:
 - *`-t, --target-version`*
   `kubent` will try to detect K8S cluster version and display only relevant findings. This flag allows to override this
   version for scenarios like use in CI with the file collector only, when detection from an actual cluster is not possible.
-  Expected format is `major.minor[.patch]`, e.g. `1.16` or `1.16.3`.
+  Expected format is `major.minor[.patch]`, e.g. `1.32` or `1.32.4`.
 
 ### Use in CI
 
