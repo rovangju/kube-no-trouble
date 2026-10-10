@@ -2,7 +2,7 @@
 # https://git-cliff.org/docs/configuration
 # Remote for git-cliff
 [remote.github]
-owner = "doitintl"
+owner = "rovangju"
 repo = "kube-no-trouble"
 [changelog]
 # changelog header

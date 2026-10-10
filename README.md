@@ -28,7 +28,7 @@ particular following tools are supported:
 Run the following command in your terminal to install `kubent` using a shell script:
 
 ```sh
-sh -c "$(curl -sSL https://raw.githubusercontent.com/doitintl/kube-no-trouble/master/scripts/install.sh)"
+sh -c "$(curl -sSL https://raw.githubusercontent.com/rovangju/kube-no-trouble/master/scripts/install.sh)"
 ```
 
 *(Unless specified the script will download latest version and unpack to `/usr/local/bin/`).*
@@ -38,7 +38,7 @@ sh -c "$(curl -sSL https://raw.githubusercontent.com/doitintl/kube-no-trouble/ma
 ### Manual Installation
 
 You can download the
-[latest release](https://github.com/doitintl/kube-no-trouble/releases/latest)
+[latest release](https://github.com/rovangju/kube-no-trouble/releases/latest)
 for your cpu architectures and operating system. You can then place it on your path.
 
 We currently maintain, the following operating systems and cpu architectures:
@@ -175,7 +175,7 @@ The simplest way to build `kubent` is:
 
 ```sh
 # Clone the repository
-git clone https://github.com/doitintl/kube-no-trouble.git
+git clone https://github.com/rovangju/kube-no-trouble.git
 cd kube-no-trouble/
 # Build
 go build -o bin/kubent ./...
@@ -195,4 +195,4 @@ clean                          Clean build artifacts
 
 ## Issues and Contributions
 
-Please open any issues and/or PRs against github.com/doitintl/kube-no-trouble repository. See our [contribution guide](.github/CONTRIBUTING.md) for more details
+Please open any issues and/or PRs against github.com/rovangju/kube-no-trouble repository. See our [contribution guide](.github/CONTRIBUTING.md) for more details
