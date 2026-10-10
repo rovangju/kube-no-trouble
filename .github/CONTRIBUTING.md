@@ -87,7 +87,7 @@ Additionally we ask that you do not squash your prs or introduce a large number 
 
 ## Writing Commit Messages
 
-We enforce [Conventional Commits][cc] for all commits in the form:
+We use [Conventional Commits][cc] for all commits in the form:
 
 ```
 <type>: <summary>
@@ -103,7 +103,7 @@ Use imperative, present tense (Add, not ~Added~), capitalize first letter of sum
 
 Relevant GitHub issues should be referenced in the footer in the form `fix(readme): Fixes #456`.
 
-The changelog groups commits by type: **feat** → Features, **fix** → Fixes, all other types → Internal/Other (see `commit_parsers` in [cliff.toml](https://github.com/doitintl/kube-no-trouble/blob/master/cliff.toml)).
+GitHub generates release notes automatically from the titles of merged PRs, so use the conventional-commit form for **PR titles** as well - e.g. `feat: Add rego for v1.38 deprecations`.
 
 [cc]: https://www.conventionalcommits.org/
 
@@ -127,47 +127,14 @@ Consistency is the most important. Following the existing style, formatting, and
 
 For example, if all private properties are prefixed with an underscore `_`, then new ones you add should be prefixed in the same way. Or, if methods are named using camelcase, like `thisIsMyNewMethod`, then do not diverge from that by writing `this_is_my_new_method`. You get the idea. If in doubt, please ask or search the codebase for something similar.
 
-We use [pre-commit](https://pre-commit.com/) to validate the style of the code along with maintainer review. If you'd like to check that your code matches our style please run and/or install our [pre-commit](https://github.com/doitintl/kube-no-trouble/blob/master/.pre-commit-config.yaml). Branches with commits which do not pass the pre-commit will not be accepted.
-
-```
-pip install pre-commit
-pre-commit run --all-files
-```
+Code formatting is validated by CI hygiene checks and by `make test`, which enforces `go fmt` and rego formatting. Run `make test` locally before submitting. Optionally, you can run the CI hygiene checks locally with [pre-commit](https://pre-commit.com/) (`pip install pre-commit && pre-commit run --all-files`) - local installation is not required.
 
 ### Changelog
 
-Changelog is generated automatically based on merged PRs using
-[git-cliff](https://git-cliff.org/). Template can be found in [cliff.toml](https://github.com/doitintl/kube-no-trouble/blob/master/cliff.toml).
-
-PRs are categorized based on their conventional commit groups, into following sections, as seen in [git cliff toml file line 62](https://github.com/doitintl/kube-no-trouble/blob/master/cliff.toml#L62):
-- Features - group **feat** - A new feature
-- Fixes - group **fix** - A bug fix
-- Internal/Other - groups **chore** **build** **ci** **build** **dep**  **docs** **ref** **style** **test** - all other changes
-
-Additionally we will reference any new contributors between the release versions. See an example release note below:
-
-```md
-## Changelog
-
-### Features:
-
-    feat: Add rego for v1.32 deprecations b4da33a by @dark0dave
-    feat: Fix github actions for creating release notes edd2dc3 by @dark0dave
-
-### Fixes:
-
-    fix: Warn and fix invalid namespace 83308e1 by @justdan96
-    fix: Add fix for git cliff 9d487c9 by @dark0dave
-
-### Internal/Other:
-
-    dep: Bump lots of deps 7cdf86a by @dark0dave
-
-#### Full Changelog: 25.9.2...26.1.1
-### New Contributors
-
-    @dark0dave made their first contribution in #1
-```
+Release notes are generated automatically by GitHub from the titles of the
+merged PRs between two tags. Write PR titles in conventional commit form so
+the notes are readable; a "Full Changelog" compare link is included
+automatically.
 
 ## Releases
 
@@ -181,15 +148,13 @@ Version numbers tell you *when* a release happened, not how big it is. There is 
 
 ### Triggering a release
 
-Releases are triggered by pushing a new tag, it is **imperative** you keep to the style of tag defined in the cliff.toml file otherwise git-cliff will not generate valid release notes.
+Releases are triggered by pushing a new tag. Release notes are generated
+automatically by GitHub from the PRs merged since the previous release.
 
 ### Expected tag structure
 
-From the cliff toml file:
-```toml
-tag_pattern = '^[0-9]{2}\.[0-9]{2}\.[0-9]+$'
-```
-Example:
+Two-digit year, zero-padded month, build number:
+
 - 26.10.1
 - 26.10.2
 - 26.11.1
@@ -202,20 +167,17 @@ A single rolling `nightly` tag is maintained on the head of the default branch, 
 
 #### When to release
 
-Cut a release when there is something worth shipping - new rules for a new K8s deprecation wave, a fix people are blocked on, and so on. We create [milestones](https://github.com/doitintl/kube-no-trouble/milestones) in the github repo to group the work that makes up a release.
+Cut a release when there is something worth shipping - new rules for a new K8s deprecation wave, a fix people are blocked on, and so on. We create [milestones](https://github.com/rovangju/kube-no-trouble/milestones) in the github repo to group the work that makes up a release.
 
-Our releases tend to be a mixture of small features and bugfixes. Example:
+Our releases tend to be a mixture of small features and bugfixes. A generated
+release note then reads like:
 
 ```md
-#### Features:
-    feat: Add rego for v1.32 deprecations b4da33a by @dark0dave
-    feat: Fix github actions for creating release notes edd2dc3 by @dark0dave
-#### Fixes:
-    fix: Script install.sh in dumb TERM 35927e8 by @FabioAntunes
-    fix: Warn and fix invalid namespace 83308e1 by @justdan96
-    fix: Add fix for git cliff 9d487c9 by @dark0dave
-#### Internal/Other:
-    dep: Bump lots of deps 7cdf86a by @dark0dave
+- feat: Add rego for v1.38 deprecations (#42)
+- fix: Warn and fix invalid namespace (#38)
+- dep: Bump deps (#40)
+
+**Full Changelog**: https://github.com/rovangju/kube-no-trouble/compare/26.10.1...26.10.2
 ```
 
 Please make an effort to stay with in these guidelines. A **smaller number** releases is preferred to a large number of releases. Additionally, We DO NOT SUPPORT `hotfixing` releases, see [hotfix explained](https://en.wikipedia.org/wiki/Hotfix). Releases stay static and immutable once released. In our view hotfixes cause more problems than they solve and introduce a burden on maintainers attempting to catch bugs and resolve issues.

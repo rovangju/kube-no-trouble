@@ -44,7 +44,6 @@ $(eval $(call setvar,CMD_DIR,cmd))
 $(eval $(call setvar,RELEASE_DIR,release-artifacts))
 $(eval $(call setvar,CMDS,$(shell ls $(CMD_DIR))))
 $(eval $(call setvar,BINS,$(addsuffix -$(BIN_ARCH)$(BIN_SUFFIX),$(addprefix $(BIN_DIR)/,$(CMDS)))))
-$(eval $(call setvar,CHANGELOG,changelog.md))
 
 $(eval $(call setvar,RELEASE_ARTIFACTS,$(addsuffix -$(RELEASE_SUFFIX),$(addprefix $(RELEASE_DIR)/,$(CMDS)))))
 $(eval $(call setvar,SRC,$(shell find . -iname '*.go')))
@@ -100,9 +99,3 @@ test-fmt:
 clean:
 	rm -rf $(BIN_DIR) $(RELEASE_DIR)
 .PHONY: clean
-
-## Generate Changelog based on PRs
-changelog:
-	mkdir -p $(RELEASE_DIR)
-	git cliff -u --latest -o $(RELEASE_DIR)/$(CHANGELOG)
-.PHONY: changelog
