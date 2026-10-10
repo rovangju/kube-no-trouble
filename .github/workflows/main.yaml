@@ -105,6 +105,8 @@ jobs:
     needs:
       [integration-test]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -134,7 +136,6 @@ jobs:
         with:
           tag_name: ${{ steps.get_tag.outputs.git_tag }}
           release_name: ${{ steps.get_tag.outputs.git_tag }}
-          generate_release_notes: true
           draft: false
           prerelease: ${{ startsWith(steps.get_tag.outputs.git_tag, 'nightly') }}
   release-artifacts:
@@ -142,6 +143,8 @@ jobs:
     needs:
       [create-release]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
         os: [linux, darwin, windows]
