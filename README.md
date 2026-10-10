@@ -2,6 +2,10 @@
 
 __*Easily check your clusters for use of deprecated APIs*__
 
+> **Note:** This is a personal fork of the original [doitintl/kube-no-trouble](https://github.com/doitintl/kube-no-trouble).
+> Many thanks to the original creators and maintainers for building such a widely useful tool — the upstream project is no
+> longer actively maintained, so this fork carries the work forward.
+
 Kubernetes 1.16 is slowly starting to roll out, not only across various managed
 Kubernetes offerings, and with that come a lot of API deprecations[1][1].
 
