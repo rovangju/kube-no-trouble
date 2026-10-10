@@ -2,8 +2,12 @@
 
 __*Easily check your clusters for use of deprecated APIs*__
 
-Kubernetes 1.16 is slowly starting to roll out, not only across various managed
-Kubernetes offerings, and with that come a lot of API deprecations[1][1].
+> **Note:** This is a personal fork of the original [doitintl/kube-no-trouble](https://github.com/doitintl/kube-no-trouble).
+> Many thanks to the original creators and maintainers for building such a widely useful tool — the upstream project is no
+> longer actively maintained, so this fork carries the work forward.
+
+Kubernetes continuously deprecates and removes API versions[1], and workloads
+that keep using them break on cluster upgrades.
 
 *Kube No Trouble (__`kubent`__)* is a simple tool to check whether you're using
 any of these API versions in your cluster and therefore should upgrade your
@@ -23,12 +27,23 @@ particular following tools are supported:
 
 [2]: https://stepan.wtf/kubernetes-deprecated-apis-introducing-kubent/
 
+## Supported Versions
+
+`kubent` targets the latest official Kubernetes release and the five minor
+versions that precede it — e.g. with 1.37 current, the supported range is
+**1.32 → 1.37**.
+
+This is a goal (best effort), not a guarantee. Detection rules, fixtures,
+tests, and CI coverage for versions outside that window are removed as new
+Kubernetes releases land — use an older `kubent` release if you need to scan
+clusters pinned further back.
+
 ## Install
 
 Run the following command in your terminal to install `kubent` using a shell script:
 
 ```sh
-sh -c "$(curl -sSL https://git.io/install-kubent)"
+sh -c "$(curl -sSL https://raw.githubusercontent.com/rovangju/kube-no-trouble/master/scripts/install.sh)"
 ```
 
 *(Unless specified the script will download latest version and unpack to `/usr/local/bin/`).*
@@ -38,7 +53,7 @@ sh -c "$(curl -sSL https://git.io/install-kubent)"
 ### Manual Installation
 
 You can download the
-[latest release](https://github.com/doitintl/kube-no-trouble/releases/latest)
+[latest release](https://github.com/rovangju/kube-no-trouble/releases/latest)
 for your cpu architectures and operating system. You can then place it on your path.
 
 We currently maintain, the following operating systems and cpu architectures:
@@ -50,29 +65,6 @@ We currently maintain, the following operating systems and cpu architectures:
 - Windows amd64
 
 *Historically Windows on arm, has not received the best support. If this changes we may add it.*
-
-### Third-Party Installation
-
-Please note that third-party installation methods are maintained by the community.
-**The packages may not always be up-to-date with the latest releases of** `kubent`.
-
-#### Homebrew
-
-`kubent` is available as a [formula](https://formulae.brew.sh/formula/kubent)
-on [Homebrew](https://brew.sh/). If you're using macOS or Linux, you can run
-the following command to install `kubent`:
-
-```sh
-brew install kubent
-```
-
-#### Scoop
-`kubent` is available for [Scoop](https://scoop.sh/) as an [app](https://bjansen.github.io/scoop-apps/main/kubent/).
-Install `kubent` by running:
-
-```powershell
-scoop install kubent
-```
 
 ## Usage
 
@@ -91,21 +83,19 @@ $./kubent
 6:25PM INF Initializing collectors and retrieving data
 6:25PM INF Retrieved 103 resources from collector name=Cluster
 6:25PM INF Retrieved 0 resources from collector name="Helm v3"
-6:25PM INF Loaded ruleset name=deprecated-1-16.rego
-6:25PM INF Loaded ruleset name=deprecated-1-20.rego
+6:25PM INF Loaded ruleset name=deprecated-1-32.rego
+6:25PM INF Loaded ruleset name=deprecated-1-36.rego
 __________________________________________________________________________________________
->>> 1.16 Deprecated APIs <<<
+>>> 1.32 Deprecated APIs <<<
 ------------------------------------------------------------------------------------------
-KIND         NAMESPACE     NAME                    API_VERSION
-Deployment   default       nginx-deployment-old    apps/v1beta1
-Deployment   kube-system   event-exporter-v0.2.5   apps/v1beta1
-Deployment   kube-system   k8s-snapshots           extensions/v1beta1
-Deployment   kube-system   kube-dns                extensions/v1beta1
+KIND                      NAMESPACE   NAME                API_VERSION
+FlowSchema                default     my-flowschema       flowcontrol.apiserver.k8s.io/v1beta3
+PriorityLevelConfiguration default   my-priority-config  flowcontrol.apiserver.k8s.io/v1beta3
 __________________________________________________________________________________________
->>> 1.20 Deprecated APIs <<<
+>>> 1.36 Deprecated APIs <<<
 ------------------------------------------------------------------------------------------
-KIND      NAMESPACE   NAME           API_VERSION
-Ingress   default     test-ingress   extensions/v1beta1
+KIND     NAMESPACE   NAME             API_VERSION
+Service  default     external-svc     v1 (spec.externalIPs)
 ```
 
 ### Arguments
@@ -146,34 +136,7 @@ Usage of ./kubent:
 - *`-t, --target-version`*
   `kubent` will try to detect K8S cluster version and display only relevant findings. This flag allows to override this
   version for scenarios like use in CI with the file collector only, when detection from an actual cluster is not possible.
-  Expected format is `major.minor[.patch]`, e.g. `1.16` or `1.16.3`.
-
-### Docker Image
-
-We also publish official container image, which can be found at:
-`ghcr.io/doitintl/kube-no-trouble:latest` (also available tagged with each
-individual release version).
-
-To run locally, you'll need to provide credentials, e.g. by sharing your
-kubectl config:
-
-```sh
-$ docker run -it --rm \
-    -v "${HOME}/.kube/config:/.kubeconfig" \
-    ghcr.io/doitintl/kube-no-trouble:latest \
-    -k /.kubeconfig
-```
-
-You can use `kubectl run` to run inside a K8S cluster, as a one-off. In that
-case the credentials will be picked up via the pod's service account from the
-environment, but you'll want to grant relevant permissions first (see
-[docs/k8s-sa-and-role-example.yaml](docs/k8s-sa-and-role-example.yaml)):
-
-```sh
-$ kubectl run kubent --restart=Never --rm -i --tty \
-    --image ghcr.io/doitintl/kube-no-trouble:latest \
-    --overrides='{"spec": {"serviceAccount": "kubent"}}'
-```
+  Expected format is `major.minor[.patch]`, e.g. `1.32` or `1.32.4`.
 
 ### Use in CI
 
@@ -225,7 +188,7 @@ The simplest way to build `kubent` is:
 
 ```sh
 # Clone the repository
-git clone https://github.com/doitintl/kube-no-trouble.git
+git clone https://github.com/rovangju/kube-no-trouble.git
 cd kube-no-trouble/
 # Build
 go build -o bin/kubent ./...
@@ -245,4 +208,4 @@ clean                          Clean build artifacts
 
 ## Issues and Contributions
 
-Please open any issues and/or PRs against github.com/doitintl/kube-no-trouble repository. See our [contribution guide](.github/CONTRIBUTING.md) for more details
+Please open any issues and/or PRs against github.com/rovangju/kube-no-trouble repository. See our [contribution guide](.github/CONTRIBUTING.md) for more details

@@ -3,21 +3,6 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "daily"
-      time: "10:00"
+      interval: "weekly"
     commit-message:
-      prefix: "dep: Go "
-    reviewers:
-      - "migueldelucasdoit"
-      - "dark0dave"
-
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "10:00"
-    commit-message:
-      prefix: "dep: Docker "
-    reviewers:
-      - "migueldelucasdoit"
-      - "dark0dave"
+      prefix: "dep:"

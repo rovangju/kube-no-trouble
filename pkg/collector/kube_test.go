@@ -48,7 +48,21 @@ func TestNewKubeCollectorWithKubeconfigPath(t *testing.T) {
 	}
 }
 
+// isolateKubeConfigEnv shields tests from the host's real kubeconfig:
+// clientcmd default loading rules merge $HOME/.kube/config (and the
+// KUBECONFIG env var) with any explicitly provided path, so tests
+// asserting on default-path resolution need a hermetic environment
+func isolateKubeConfigEnv(t *testing.T) *env {
+	t.Helper()
+	return setupEnv(t, map[string]string{
+		"HOME":       t.TempDir(),
+		"KUBECONFIG": "",
+	})
+}
+
 func TestNewKubeCollectorError(t *testing.T) {
+	env := isolateKubeConfigEnv(t)
+	defer env.reset()
 	_, err := newKubeCollector("does-not-exist", "", nil, USER_AGENT)
 
 	if err == nil {
@@ -81,6 +95,8 @@ func TestGetServerVersion(t *testing.T) {
 }
 
 func TestContext(t *testing.T) {
+	env := isolateKubeConfigEnv(t)
+	defer env.reset()
 	expectedContext := "test-context"
 	expectedHost := "https://test-cluster"
 
@@ -105,6 +121,8 @@ func TestContextMissing(t *testing.T) {
 }
 
 func TestNewClientRestConfigError(t *testing.T) {
+	env := isolateKubeConfigEnv(t)
+	defer env.reset()
 	_, err := newClientRestConfig("does-not-exist", "", rest.InClusterConfig, USER_AGENT)
 
 	if err == nil {
@@ -131,6 +149,8 @@ func TestNewClientRestConfigMultipleFiles(t *testing.T) {
 }
 
 func TestNewClientRestConfigWithContext(t *testing.T) {
+	env := isolateKubeConfigEnv(t)
+	defer env.reset()
 	expectedContext := "test-context"
 	expectedHost := "https://test-cluster"
 

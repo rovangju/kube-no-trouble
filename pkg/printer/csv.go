@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/doitintl/kube-no-trouble/pkg/judge"
+	"github.com/rovangju/kube-no-trouble/pkg/judge"
 )
 
 type csvPrinter struct {

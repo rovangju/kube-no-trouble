@@ -1,38 +1,30 @@
-package deprecated127
+package deprecated135
 
+# Source: https://github.com/kubernetes/kubernetes/blob/v1.35.0/CHANGELOG/CHANGELOG-1.35.md
 main[return] {
 	resource := input[_]
 	api := deprecated_resource(resource)
 	return := {
 		"Name": get_default(resource.metadata, "name", "<undefined>"),
-		# Namespace does not have to be defined in case of local manifests
 		"Namespace": get_default(resource.metadata, "namespace", "<undefined>"),
 		"Kind": resource.kind,
 		"ApiVersion": api.old,
 		"ReplaceWith": api.new,
-		"RuleSet": "Deprecated APIs removed in 1.27",
+		"RuleSet": "Deprecated API values since 1.35",
 		"Since": api.since,
 		"Labels": get_default(resource.metadata, "labels", "<undefined>"),
 	}
 }
 
 deprecated_resource(r) = api {
-	api := deprecated_api(r.kind, r.apiVersion)
-}
-
-deprecated_api(kind, api_version) = api {
-	deprecated_apis = {"CSIStorageCapacity": {
-		"old": ["storage.k8s.io/v1beta1"],
-		"new": "storage.k8s.io/v1",
-		"since": "1.24",
-	}}
-
-	deprecated_apis[kind].old[_] == api_version
-
+	r.kind == "Service"
+	r.apiVersion == "v1"
+	spec := object.get(r, "spec", {})
+	object.get(spec, "trafficDistribution", "") == "PreferClose"
 	api := {
-		"old": api_version,
-		"new": deprecated_apis[kind].new,
-		"since": deprecated_apis[kind].since,
+		"old": "v1",
+		"new": "spec.trafficDistribution: PreferSameZone",
+		"since": "1.35",
 	}
 }
 

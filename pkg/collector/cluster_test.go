@@ -16,15 +16,21 @@ import (
 )
 
 func TestNewClusterCollectorBadPath(t *testing.T) {
+	// Isolate kubeconfig loading rules from the host environment: without
+	// this, a missing explicit path falls back to a real ~/.kube/config
+	// (present on dev machines, absent in CI) and no error is returned
+	env := isolateKubeConfigEnv(t)
+	defer env.reset()
+
 	testOpts := ClusterOpts{Kubeconfig: "bad path"}
 	_, err := NewClusterCollector(&testOpts, []string{}, []string{}, USER_AGENT)
 
+	if err == nil {
+		t.Fatal("expected an error for a non-existent kubeconfig, got none")
+	}
+
 	if !strings.Contains(err.Error(), "no configuration has been provided") {
-		if err != nil {
-			t.Errorf("Should have errored with invalid configuration error instead got: %s", err)
-		} else {
-			t.Errorf("Should have failed but succeeded")
-		}
+		t.Errorf("Should have errored with invalid configuration error instead got: %s", err)
 	}
 }
 

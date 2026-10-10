@@ -6,11 +6,11 @@ import (
 	"io"
 	"os"
 
-	"github.com/doitintl/kube-no-trouble/pkg/collector"
-	"github.com/doitintl/kube-no-trouble/pkg/config"
-	"github.com/doitintl/kube-no-trouble/pkg/judge"
-	"github.com/doitintl/kube-no-trouble/pkg/printer"
-	"github.com/doitintl/kube-no-trouble/pkg/rules"
+	"github.com/rovangju/kube-no-trouble/pkg/collector"
+	"github.com/rovangju/kube-no-trouble/pkg/config"
+	"github.com/rovangju/kube-no-trouble/pkg/judge"
+	"github.com/rovangju/kube-no-trouble/pkg/printer"
+	"github.com/rovangju/kube-no-trouble/pkg/rules"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -95,6 +95,36 @@ func getServerVersion(cv *judge.Version, collectors []collector.Collector) (*jud
 	return cv, nil
 }
 
+// logVersionSupport warns when the target version and/or the detected cluster
+// version fall below the supported window (latest official K8s release + 5).
+func logVersionSupport(targetVersion *judge.Version, clusterVersion *judge.Version) {
+	minVersion, err := judge.NewVersion(config.MinSupportedTargetVersion)
+	if err != nil {
+		return
+	}
+
+	belowWindow := func(v *judge.Version) bool {
+		return v != nil && v.Version != nil && v.Version.LessThan(minVersion.Version)
+	}
+
+	latest := "the latest Kubernetes release and the 5 minor versions before it"
+
+	belowTarget := belowWindow(targetVersion)
+	if belowTarget {
+		log.Warn().Msgf("target K8s version %s is below the supported window (>= %s): findings will be incomplete, kubent targets %s",
+			targetVersion.String(), config.MinSupportedTargetVersion, latest)
+	}
+
+	sameVersion := func(a, b *judge.Version) bool {
+		return !a.Version.LessThan(b.Version) && !b.Version.LessThan(a.Version)
+	}
+
+	if belowWindow(clusterVersion) && !(belowTarget && targetVersion.Version != nil && sameVersion(clusterVersion, targetVersion)) {
+		log.Warn().Msgf("cluster is running K8s version %s, which is below the supported window (>= %s): results may be incomplete, kubent targets %s",
+			clusterVersion.String(), config.MinSupportedTargetVersion, latest)
+	}
+}
+
 func main() {
 	exitCode := EXIT_CODE_FAIL_GENERIC
 
@@ -119,10 +149,12 @@ func main() {
 	log.Info().Msg("Initializing collectors and retrieving data")
 	initCollectors := initCollectors(config)
 
+	clusterVersion, _ := getServerVersion(nil, initCollectors)
 	config.TargetVersion, _ = getServerVersion(config.TargetVersion, initCollectors)
 	if config.TargetVersion != nil {
 		log.Info().Msgf("Target K8s version is %s", config.TargetVersion.String())
 	}
+	logVersionSupport(config.TargetVersion, clusterVersion)
 
 	collectors, err := getCollectors(initCollectors)
 	if err != nil {

@@ -9,12 +9,17 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/doitintl/kube-no-trouble/pkg/judge"
+	"github.com/rovangju/kube-no-trouble/pkg/judge"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/rs/zerolog"
 	flag "github.com/spf13/pflag"
 )
+
+// MinSupportedTargetVersion is the oldest Kubernetes version kubent supports.
+// Policy: latest official release + 5 minors back (see README "Supported
+// Versions"). Bump this in lockstep when pruning rules for old versions.
+const MinSupportedTargetVersion = "1.32"
 
 type Config struct {
 	AdditionalKinds       []string

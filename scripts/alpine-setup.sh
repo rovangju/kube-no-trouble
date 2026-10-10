@@ -8,8 +8,6 @@ apk add --update --no-cache \
 	bash \
 	curl \
 	git \
-	git-cliff \
-	jq \
 	make \
 	tar \
 	xz

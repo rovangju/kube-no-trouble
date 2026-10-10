@@ -1,60 +1,39 @@
 SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .ONESHELL:
-.SECONDEXPANSION:
 .DELETE_ON_ERROR:
-.EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
-
-ifeq (, $(shell command -v gtar))
-	TAR ?= tar
-endif
-TAR ?= gtar
 
 ifneq (3.82,$(firstword $(sort $(MAKE_VERSION) 3.82)))
   $(error This Make does not support .ONESHELL, use GNU Make 3.82 and newer)
 endif
 
-ifeq (windows,$(GOOS))
-  BIN_SUFFIX ?= .exe
-endif
-BIN_SUFFIX ?=
-
 .DEFAULT_GOAL :=help
 
-GITHUB_REF ?= dev
-GIT_REF ?= $(shell echo "$(GITHUB_REF)" | sed "s,refs/[^/]*/,," | tr -cd '[:alnum:]._-')
-GITHUB_SHA ?= dev
-GIT_SHA ?= $(GITHUB_SHA)
-
-CGO_ENABLED ?= 0
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
-BIN_ARCH ?= $(GOOS)-$(GOARCH)
-RELEASE_SUFFIX ?= $(GIT_REF)-$(BIN_ARCH).tar.gz
+CGO_ENABLED ?= 0
+BIN_SUFFIX := $(if $(filter windows,$(GOOS)),.exe,)
+BIN_ARCH := $(GOOS)-$(GOARCH)
 
-OPA_REPO ?= github.com/open-policy-agent/opa
-OPA_VERSION ?= v0.22.0
+GITHUB_REF ?= dev
+GIT_REF := $(shell echo "$(notdir $(GITHUB_REF))" | tr -cd '[:alnum:]._-')
+GITHUB_SHA ?= dev
+GIT_SHA ?= $(GITHUB_SHA)
 
 BIN_DIR ?= bin
 CMD_DIR ?= cmd
 RELEASE_DIR ?= release-artifacts
-CMDS ?= $(shell ls $(CMD_DIR))
-BINS ?= $(addsuffix -$(BIN_ARCH)$(BIN_SUFFIX),$(addprefix $(BIN_DIR)/,$(CMDS)))
-CHANGELOG ?= changelog.md
 
-RELEASE_ARTIFACTS ?= $(addsuffix -$(RELEASE_SUFFIX),$(addprefix $(RELEASE_DIR)/,$(CMDS)))
-SRC ?= $(shell find . -iname '*.go')
+BIN := $(BIN_DIR)/kubent-$(BIN_ARCH)$(BIN_SUFFIX)
+ARTIFACT := $(RELEASE_DIR)/kubent-$(GIT_REF)-$(BIN_ARCH).tar.gz
 
-GOCMD ?= go
-GOBUILD ?= $(GOCMD) build
+SRC := $(wildcard $(CMD_DIR)/kubent/*.go) $(wildcard pkg/*/*.go)
 
-REQ_BINS = go
-
-_ := $(foreach exec,$(REQ_BINS), \
-       $(if $(shell which $(exec)),some string,$(error "No $(exec) binary in $$PATH")))
-
+ifeq (, $(shell command -v go))
+  $(error "No go binary in PATH")
+endif
 
 ## Clean, build and pack
 all: clean build release-artifacts
@@ -66,31 +45,32 @@ help:
 .PHONY: help
 
 ## Build binary
-build: $(BINS)
+build: $(BIN)
 .PHONY: build
 
-$(BIN_DIR)/%-$(BIN_ARCH)$(BIN_SUFFIX): $(SRC) go.mod go.sum
+$(BIN): $(SRC) go.mod go.sum
 	mkdir -p $(BIN_DIR)
-	$(GOBUILD) -ldflags="-s -w -X main.version=$(GIT_REF) -X main.gitSha=$(GIT_SHA)" \
-	-o "$@" \
-	"./$(CMD_DIR)/$(*)"
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=$(CGO_ENABLED) go build -ldflags="-s -w -X main.version=$(GIT_REF) -X main.gitSha=$(GIT_SHA)" -o "$@" ./$(CMD_DIR)/kubent
 
 ## Create release artifacts
-release-artifacts: $(RELEASE_ARTIFACTS)
+release-artifacts: $(ARTIFACT)
 .PHONY: release-artifacts
 
-$(RELEASE_DIR)/%-$(RELEASE_SUFFIX): $(BIN_DIR)/%-$(BIN_ARCH)$(BIN_SUFFIX)
+$(ARTIFACT): $(BIN)
 	mkdir -p $(RELEASE_DIR)
-	$(TAR) -cvz --transform 's,$(BIN_DIR)/$(*)-$(BIN_ARCH)$(BIN_SUFFIX),$(*)$(BIN_SUFFIX),gi' -f "$@" "$<"
+	staging=$$(mktemp -d)
+	cp $(BIN) "$$staging/kubent$(BIN_SUFFIX)"
+	tar -czf "$@" -C "$$staging" "kubent$(BIN_SUFFIX)"
+	rm -rf "$$staging"
 
 ## Run Go tests
 test: test-fmt
 	go test -v -coverprofile fmtcoverage.html ./...
 .PHONY: test
 
-## Run go and opt fmt checks
+## Run go and opa fmt checks
 test-fmt:
-	test -z "$$(go run $(OPA_REPO)@$(OPA_VERSION) fmt -l pkg/rules/rego/*)"
+	test -z "$$(go run github.com/open-policy-agent/opa@v0.70.0 fmt -l pkg/rules/rego/*)"
 	test -z "$$(go fmt ./...)"
 .PHONY: test-fmt
 
@@ -98,9 +78,3 @@ test-fmt:
 clean:
 	rm -rf $(BIN_DIR) $(RELEASE_DIR)
 .PHONY: clean
-
-## Generate Changelog based on PRs
-changelog:
-	mkdir -p $(RELEASE_DIR)
-	git cliff -u --latest -o $(RELEASE_DIR)/$(CHANGELOG)
-.PHONY: changelog
