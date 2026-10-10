@@ -67,10 +67,9 @@ curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" \
 }
 
 get_latest_nightly_release() {
-  curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases"  \
+  curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases/tags/nightly" \
   | grep -oE '"tag_name": "[^"]*' \
-  | grep -oE '[^"]*$' \
-  | head -1
+  | grep -oE '[^"]*$'
 }
 
 download_version() {

@@ -97,23 +97,15 @@ We enforce [Conventional Commits][cc] for all commits in the form:
 [optional footer(s)]
 ```
 
-Where type is one of:
-- **build** - Affects build and/or build system
-- **chore** - Other non-functional changes
-- **ci** - Affects CI (e.g. GitHub actions)
-- **dep** - Dependency update
-- **docs** - Documentation only change
-- **feat** - A new feature
-- **fix** - A bug fix
-- **ref** - Code refactoring without functionality change
-- **style** - Formatting changes
-- **test** - Adding/changing tests
-
-[cc]: https://www.conventionalcommits.org/
+See the [Conventional Commits specification][cc] for the list of types and full rules.
 
 Use imperative, present tense (Add, not ~Added~), capitalize first letter of summary, no dot at the and. The body and footer are optional. And are ignored by our release note process.
 
 Relevant GitHub issues should be referenced in the footer in the form `fix(readme): Fixes #456`.
+
+The changelog groups commits by type: **feat** → Features, **fix** → Fixes, all other types → Internal/Other (see `commit_parsers` in [cliff.toml](https://github.com/doitintl/kube-no-trouble/blob/master/cliff.toml)).
+
+[cc]: https://www.conventionalcommits.org/
 
 ## Signing Commits
 
@@ -155,8 +147,6 @@ PRs are categorized based on their conventional commit groups, into following se
 Additionally we will reference any new contributors between the release versions. See an example release note below:
 
 ```md
-#### Docker Image: ghcr.io/doitintl/kube-no-trouble:latest
-
 ## Changelog
 
 ### Features:
@@ -166,14 +156,14 @@ Additionally we will reference any new contributors between the release versions
 
 ### Fixes:
 
-    fix: Add docker image back 6de101d by @dark0dave
+    fix: Warn and fix invalid namespace 83308e1 by @justdan96
     fix: Add fix for git cliff 9d487c9 by @dark0dave
 
 ### Internal/Other:
 
     dep: Bump lots of deps 7cdf86a by @dark0dave
 
-#### Full Changelog: 1.0.0...2.0.0
+#### Full Changelog: 25.9.2...26.1.1
 ### New Contributors
 
     @dark0dave made their first contribution in #1
@@ -181,15 +171,13 @@ Additionally we will reference any new contributors between the release versions
 
 ## Releases
 
-We use [semantic versioning](https://semver.org/) in kubent.
+We use [calendar versioning](https://calver.org/) (CalVer) in kubent, in the `YY.MM.BUILD` format - e.g. `26.10.1` is the first release cut in October 2026.
 
-> Given a version number MAJOR.MINOR.PATCH, increment the:
->
-> - MAJOR version when you make incompatible API changes
-> - MINOR version when you add functionality in a backward compatible manner
-> - PATCH version when you make backward compatible bug fixes
->
-> Additional labels for pre-release and build metadata are available as extensions to the MAJOR.MINOR.PATCH format.
+> - The year and month come from the date the release is cut
+> - BUILD increments with each release within the calendar year and resets to `1` in January
+> - Month and BUILD are zero-padded where relevant, e.g. `26.01.2`
+
+Version numbers tell you *when* a release happened, not how big it is. There is no major/minor/patch semantics to reason about - the [changelog](#changelog) tells you what is in each release.
 
 ### Triggering a release
 
@@ -199,22 +187,24 @@ Releases are triggered by pushing a new tag, it is **imperative** you keep to th
 
 From the cliff toml file:
 ```toml
-tag_pattern = "^[0-9]+.[0-9]+.[0-9]+$"
+tag_pattern = '^[0-9]{2}\.[0-9]{2}\.[0-9]+$'
 ```
 Example:
-- 0.7.1
-- 0.7.2
-- 0.7.3
+- 26.10.1
+- 26.10.2
+- 26.11.1
+
+Note: legacy semver tags (e.g. `0.9.0`) remain on the repo for history. CalVer tags sort above them, so "latest release" tooling keeps working.
 
 #### Nightly
 
-Nightly release happen on weekly schedule, this important for good health of the repo. This insures all our ci is always running properly. The intent here, is to release versions so that developers can test recent functionality in the wild. We can not foresee all out comes so we must rely on others.
+A single rolling `nightly` tag is maintained on the head of the default branch, on a regular schedule. This is important for good health of the repo. This insures all our ci is always running properly. The intent here, is to release versions so that developers can test recent functionality in the wild. We can not foresee all out comes so we must rely on others. Nightly releases are marked as pre-releases and can be installed with the installer's `-n` flag.
 
 #### When to release
 
-We create [milestones](https://github.com/doitintl/kube-no-trouble/milestones) in the github repo which guide us towards minor releases, such as 0.7.0 or 0.6.0. @stepanstipl the creator of this repo has always avoided releasing 1.0.0 because that would lock our existing functionality in. Currently there are large outstanding issue which prevent us from having a stable API, ie version 1.0.0. This is in line with the semver doc see [here](https://semver.org/#how-do-i-know-when-to-release-100).
+Cut a release when there is something worth shipping - new rules for a new K8s deprecation wave, a fix people are blocked on, and so on. We create [milestones](https://github.com/doitintl/kube-no-trouble/milestones) in the github repo to group the work that makes up a release.
 
-All that to say, our patches tend to be a mixture of small features and bugfixes. Example:
+Our releases tend to be a mixture of small features and bugfixes. Example:
 
 ```md
 #### Features:
@@ -222,8 +212,7 @@ All that to say, our patches tend to be a mixture of small features and bugfixes
     feat: Fix github actions for creating release notes edd2dc3 by @dark0dave
 #### Fixes:
     fix: Script install.sh in dumb TERM 35927e8 by @FabioAntunes
-    fix: warn and fix invalid namespace 83308e1 by @justdan96
-    fix: Add docker image back 6de101d by @dark0dave
+    fix: Warn and fix invalid namespace 83308e1 by @justdan96
     fix: Add fix for git cliff 9d487c9 by @dark0dave
 #### Internal/Other:
     dep: Bump lots of deps 7cdf86a by @dark0dave

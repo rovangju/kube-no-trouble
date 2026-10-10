@@ -2,28 +2,16 @@ name: nightly
 on:
   schedule:
     - cron: '2 2 * * *'
+  workflow_dispatch:
 jobs:
   create-tag:
-    name: Create tag
+    name: Move nightly tag
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
-      - name: Set tag name
-        id: git_tag
-        run: echo "tag=$(git describe --tags --match '[0-9].[0-9].[0-9]')" >> "$GITHUB_OUTPUT"
-      - name: check if tag exists
-        id: tag_exists
-        run: |
-          set -x
-          exists=false
-          [ "$(git tag -l "${TAG}")" = "${TAG}" ] && exists=true
-          [ "$(git tag -l "nightly-${TAG}")" = "nightly-${TAG}" ] && exists=true
-          echo "result=${exists}" >> "$GITHUB_OUTPUT"
-        env:
-          TAG: ${{ steps.git_tag.outputs.tag }}
       - name: Setup SSH Keys and known_hosts
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
@@ -32,13 +20,9 @@ jobs:
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
           ssh-add - <<< "${{ secrets.GH_SSH_KEY }}"
-        if: ${{ steps.tag_exists.outputs.result != 'true' }}
-      - name: Create tag
+      - name: Move nightly tag to HEAD
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-          TAG: "nightly-${{ steps.git_tag.outputs.tag }}"
         run: |
-          git tag "${TAG}"
-          git remote set-url origin git@github.com:doitintl/kube-no-trouble.git
-          git push origin "refs/tags/${TAG}"
-        if: ${{ steps.tag_exists.outputs.result != 'true' }}
+          git tag -f nightly
+          git push -f origin refs/tags/nightly

@@ -28,7 +28,7 @@ particular following tools are supported:
 Run the following command in your terminal to install `kubent` using a shell script:
 
 ```sh
-sh -c "$(curl -sSL https://git.io/install-kubent)"
+sh -c "$(curl -sSL https://raw.githubusercontent.com/doitintl/kube-no-trouble/master/scripts/install.sh)"
 ```
 
 *(Unless specified the script will download latest version and unpack to `/usr/local/bin/`).*
@@ -50,29 +50,6 @@ We currently maintain, the following operating systems and cpu architectures:
 - Windows amd64
 
 *Historically Windows on arm, has not received the best support. If this changes we may add it.*
-
-### Third-Party Installation
-
-Please note that third-party installation methods are maintained by the community.
-**The packages may not always be up-to-date with the latest releases of** `kubent`.
-
-#### Homebrew
-
-`kubent` is available as a [formula](https://formulae.brew.sh/formula/kubent)
-on [Homebrew](https://brew.sh/). If you're using macOS or Linux, you can run
-the following command to install `kubent`:
-
-```sh
-brew install kubent
-```
-
-#### Scoop
-`kubent` is available for [Scoop](https://scoop.sh/) as an [app](https://bjansen.github.io/scoop-apps/main/kubent/).
-Install `kubent` by running:
-
-```powershell
-scoop install kubent
-```
 
 ## Usage
 
@@ -147,33 +124,6 @@ Usage of ./kubent:
   `kubent` will try to detect K8S cluster version and display only relevant findings. This flag allows to override this
   version for scenarios like use in CI with the file collector only, when detection from an actual cluster is not possible.
   Expected format is `major.minor[.patch]`, e.g. `1.16` or `1.16.3`.
-
-### Docker Image
-
-We also publish official container image, which can be found at:
-`ghcr.io/doitintl/kube-no-trouble:latest` (also available tagged with each
-individual release version).
-
-To run locally, you'll need to provide credentials, e.g. by sharing your
-kubectl config:
-
-```sh
-$ docker run -it --rm \
-    -v "${HOME}/.kube/config:/.kubeconfig" \
-    ghcr.io/doitintl/kube-no-trouble:latest \
-    -k /.kubeconfig
-```
-
-You can use `kubectl run` to run inside a K8S cluster, as a one-off. In that
-case the credentials will be picked up via the pod's service account from the
-environment, but you'll want to grant relevant permissions first (see
-[docs/k8s-sa-and-role-example.yaml](docs/k8s-sa-and-role-example.yaml)):
-
-```sh
-$ kubectl run kubent --restart=Never --rm -i --tty \
-    --image ghcr.io/doitintl/kube-no-trouble:latest \
-    --overrides='{"spec": {"serviceAccount": "kubent"}}'
-```
 
 ### Use in CI
 
